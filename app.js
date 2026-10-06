@@ -153,18 +153,29 @@ function normalizePeriodClient(v){
 async function loadInvoices(){
   const periode=normalizePeriodClient(document.getElementById('invoicePeriod').value||currentMonth());
   const status=document.getElementById('invoiceStatus').value;
-  // Ambil semua tagihan dulu, lalu filter di browser. Ini membuat tampilan tetap
-  // bekerja walaupun Google Sheets/Apps Script mengubah format periode menjadi tanggal.
-  const r=await api('invoices',{});
+  const tbody=document.getElementById('invoiceRows');
+  tbody.innerHTML='<tr><td colspan="6">Memuat data tagihan...</td></tr>';
+  // Kirim periode ke backend DAN filter ulang di browser. Dengan begitu versi backend lama
+  // maupun backend baru tetap bisa menampilkan data yang sama.
+  const r=await api('invoices',{periode:periode});
   let rows=Array.isArray(r.data)?r.data:(Array.isArray(r.invoices)?r.invoices:[]);
   rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
   if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===String(status).trim().toLowerCase());
   state.invoices=rows;
-  document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
+  if(!rows.length){
+    let extra='';
+    try{
+      const d=await api('invoice_debug');
+      if(d && d.data) extra=`<br><small style="color:#666">Data di Sheet: ${Number(d.data.total||0)} baris. Periode terbaca: ${esc(d.data.periods||'-')}.</small>`;
+    }catch(_e){}
+    tbody.innerHTML='<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.'+extra+'</td></tr>';
+    return;
+  }
+  tbody.innerHTML=state.invoices.map(i=>`
     <tr><td><b>${esc(i.nama||i.pelanggan||'')}</b><br><small>${esc(i.no_hp||'')}</small></td><td>${esc(normalizePeriodClient(i.periode))}</td>
     <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo||'-')}</td>
     <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status||'-')}</span></td>
-    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.</td></tr>';
+    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('');
 }
 async function generateInvoices(){
   const periode=document.getElementById('invoicePeriod').value||currentMonth();
@@ -326,16 +337,35 @@ async function savePackage(p){
 }
 function payInvoice(i){
   document.getElementById('modalTitle').textContent='Catat Pembayaran';
+  const amount=Number(i.nominal)||0;
   document.getElementById('modalBody').innerHTML=`
-    <p><b>${esc(i.nama)}</b><br>Periode ${esc(i.periode)}<br>Total ${rupiah(i.nominal)}</p>
-    <div class="field"><label>Nominal Bayar</label><input id="payNominal" type="number" value="${Number(i.nominal)||0}"></div>
-    <div class="field"><label>Metode</label><select id="payMetode"><option>Cash</option><option>Transfer</option><option>QRIS</option><option>E-Wallet</option></select></div>
-    <div class="field"><label>Catatan</label><input id="payCatatan"></div>
-    <button class="btn btn-primary full" onclick='savePayment(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Simpan Pembayaran</button>`;
+    <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:18px;font-weight:800">${esc(i.nama||'-')}</div>
+      <div class="muted">Periode ${esc(normalizePeriodClient(i.periode))} · Jatuh tempo ${esc(i.jatuh_tempo||'-')}</div>
+      <div style="font-size:25px;font-weight:900;margin-top:7px">${rupiah(amount)}</div>
+    </div>
+    <div class="field"><label>Nominal Bayar</label><input id="payNominal" type="number" min="1" value="${amount}"></div>
+    <div class="field"><label>Metode Pembayaran</label><select id="payMetode"><option value="Cash">Cash</option><option value="Transfer">Transfer</option></select></div>
+    <div class="field"><label>Tanggal Bayar</label><input id="payTanggal" type="date" value="${todayClient()}"></div>
+    <div class="field"><label>Catatan</label><input id="payCatatan" placeholder="Opsional"></div>
+    <button class="btn btn-primary full" onclick='savePayment(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✓ Simpan Pembayaran</button>`;
   document.getElementById('modal').classList.add('show');
 }
+function todayClient(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 async function savePayment(i){
-  try{const r=await api('pay',{tagihan_id:i.id,pelanggan_id:i.pelanggan_id,nominal:payNominal.value,metode:payMetode.value,catatan:payCatatan.value});toast(r.message||'Pembayaran berhasil');closeModal();await loadInvoices();await loadDashboard();}catch(e){showError(e)}
+  const nominal=Number(document.getElementById('payNominal').value||0);
+  const total=Number(i.nominal||0);
+  if(nominal<=0){showError(new Error('Nominal pembayaran harus lebih dari 0.'));return}
+  if(nominal<total){showError(new Error('Nominal pembayaran harus sama dengan atau lebih besar dari total tagihan.'));return}
+  try{
+    const r=await api('pay',{tagihan_id:i.id,pelanggan_id:i.pelanggan_id,nominal:nominal,metode:document.getElementById('payMetode').value,tanggal_bayar:document.getElementById('payTanggal').value,catatan:document.getElementById('payCatatan').value});
+    toast(r.message||'Pembayaran berhasil');
+    closeModal();
+    await Promise.all([loadInvoices(),loadDashboard(),loadReport()]);
+  }catch(e){showError(e)}
 }
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 boot();
