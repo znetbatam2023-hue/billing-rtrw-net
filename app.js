@@ -110,12 +110,14 @@ async function loadDashboard(){
   const invoiceTotal=invoices.reduce((sum,i)=>sum+Number(String(i.nominal??0).replace(/[^0-9.-]/g,'' )||0),0);
   const dashboardTotal=Number(d.total_tagihan||0);
   const totalTagihan=dashboardTotal>0 ? dashboardTotal : invoiceTotal;
+  const unpaidTotal=invoices.filter(i=>String(i.status||'').trim().toLowerCase().replace(/\s+/g,' ')==='belum lunas')
+    .reduce((sum,i)=>sum+Number(String(i.nominal??0).replace(/[^0-9.-]/g,'')||0),0);
 
   document.getElementById('kTotal').textContent=d.total_pelanggan||0;
   document.getElementById('kActive').textContent=d.aktif||0;
   document.getElementById('kUnpaid').textContent=d.belum_lunas||0;
   document.getElementById('kBillTotal').textContent=rupiah(totalTagihan);
-  document.getElementById('kRevenue').textContent=rupiah(d.pendapatan);
+  document.getElementById('kUnpaidMoney').textContent=rupiah(unpaidTotal);
   document.getElementById('kCash').textContent=rupiah(d.cash ?? d.total_cash);
   document.getElementById('kTransfer').textContent=rupiah(d.transfer ?? d.total_transfer);
 }
