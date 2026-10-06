@@ -156,27 +156,45 @@ async function loadInvoices(){
   const status=document.getElementById('invoiceStatus').value;
   const tbody=document.getElementById('invoiceRows');
   tbody.innerHTML='<tr><td colspan="6">Memuat data tagihan...</td></tr>';
-  // Kirim periode ke backend DAN filter ulang di browser. Dengan begitu versi backend lama
-  // maupun backend baru tetap bisa menampilkan data yang sama.
-  const r=await api('invoices',{periode:periode});
-  let rows=Array.isArray(r.data)?r.data:(Array.isArray(r.invoices)?r.invoices:[]);
-  rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
-  if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===String(status).trim().toLowerCase());
-  state.invoices=rows;
-  if(!rows.length){
-    let extra='';
-    try{
-      const d=await api('invoice_debug');
-      if(d && d.data) extra=`<br><small style="color:#666">Data di Sheet: ${Number(d.data.total||0)} baris. Periode terbaca: ${esc(d.data.periods||'-')}.</small>`;
-    }catch(_e){}
-    tbody.innerHTML='<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.'+extra+'</td></tr>';
-    return;
+  try{
+    // Ambil SEMUA tagihan dari server terlebih dahulu. Ini membuat frontend tetap
+    // kompatibel walaupun deployment Apps Script masih menggunakan versi filter lama.
+    let r=await api('invoices',{});
+    let rows=Array.isArray(r.data)?r.data:(Array.isArray(r.invoices)?r.invoices:(Array.isArray(r.rows)?r.rows:[]));
+
+    // Jika server lama mengembalikan kosong saat tanpa periode, coba endpoint dengan periode.
+    if(!rows.length){
+      try{
+        const r2=await api('invoices',{periode:periode});
+        rows=Array.isArray(r2.data)?r2.data:(Array.isArray(r2.invoices)?r2.invoices:(Array.isArray(r2.rows)?r2.rows:[]));
+      }catch(_e){}
+    }
+
+    // Normalisasi periode di browser dan filter di sini.
+    rows=rows.map(i=>Object.assign({},i,{periode:normalizePeriodClient(i.periode)}));
+    rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
+    if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===String(status).trim().toLowerCase());
+    state.invoices=rows;
+
+    if(!rows.length){
+      let extra='';
+      try{
+        const d=await api('invoice_debug');
+        if(d && d.data) extra=`<br><small style="color:#666">Data di Sheet: ${Number(d.data.total||0)} baris. Periode terbaca: ${esc(d.data.periods||'-')}.</small>`;
+      }catch(_e){}
+      tbody.innerHTML='<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.'+extra+'</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML=state.invoices.map(i=>`
+      <tr><td><b>${esc(i.nama||i.pelanggan||'')}</b><br><small>${esc(i.no_hp||'')}</small></td><td>${esc(normalizePeriodClient(i.periode))}</td>
+      <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo||'-')}</td>
+      <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status||'-')}</span></td>
+      <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('');
+  }catch(e){
+    tbody.innerHTML='<tr><td colspan="6" style="color:#b00020">Gagal memuat tagihan: '+esc(e.message||e)+'</td></tr>';
+    showError(e);
   }
-  tbody.innerHTML=state.invoices.map(i=>`
-    <tr><td><b>${esc(i.nama||i.pelanggan||'')}</b><br><small>${esc(i.no_hp||'')}</small></td><td>${esc(normalizePeriodClient(i.periode))}</td>
-    <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo||'-')}</td>
-    <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status||'-')}</span></td>
-    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('');
 }
 async function generateInvoices(){
   const periode=document.getElementById('invoicePeriod').value||currentMonth();
