@@ -7,11 +7,7 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f4f7fb",
-  "theme_color": "#0b63ce",
-  "categories": [
-    "business",
-    "finance",
-    "utilities"
-  ]
+  "background_color": "#dcecff",
+  "theme_color": "#0b4f8a",
+  "categories": ["business", "finance", "utilities"]
 }
