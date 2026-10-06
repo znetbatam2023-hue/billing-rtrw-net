@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rtrw-net-billing-v4';
+const CACHE_NAME = 'rtrw-net-billing-v6-tagihan-fix';
 const APP_SHELL = [
   './',
   './index.html',
