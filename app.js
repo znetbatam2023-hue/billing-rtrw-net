@@ -239,11 +239,11 @@ async function loadWhatsApp(){
   if(period && !period.value) period.value=currentMonth();
   try{
     const [cfg,auto]=await Promise.all([api('whatsapp_config'),api('get_whatsapp_auto')]);
-    const d=cfg.data||{};
+    const d=(cfg && cfg.data && cfg.data.data) ? cfg.data.data : (cfg.data||{});
     const status=document.getElementById('waStatus');
-    status.textContent=d.configured?'Terhubung / API Key tersimpan':'Belum dikonfigurasi';
+    status.textContent=d.configured?'Fonnte Terhubung':'Fonnte Belum Dikonfigurasi';
     status.className='badge '+(d.configured?'paid':'unpaid');
-    document.getElementById('waConfigText').textContent=d.configured ? ('API: '+d.apiUrl+' • Jeda: '+d.delayMs+' ms') : 'Isi WAGATE_API_KEY di Script Properties Apps Script.';
+    document.getElementById('waConfigText').textContent=d.configured ? ('Fonnte • API: '+(d.apiUrl||'https://api.fonnte.com/send')+' • Jeda: '+(d.delayMs||2500)+' ms') : 'Isi FONNTE_TOKEN di Script Properties Apps Script.';
     const a=auto||{};
     document.getElementById('waDay').value=a.day||1;
     document.getElementById('waAuto').checked=!!a.enabled;
