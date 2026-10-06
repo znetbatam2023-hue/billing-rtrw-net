@@ -35,7 +35,7 @@
     .nav-btn.active,.nav-btn:hover{background:#fff;color:#111}
     .main{margin-left:230px;width:calc(100% - 230px);padding:28px;max-width:none;background:#fff;min-height:calc(100vh - 64px)}
     .page-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.page-head h2{margin-bottom:4px}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.dashboard-kpi{grid-template-columns:repeat(5,1fr)}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     .card{background:#fff;border:1px solid #d5d5d5;border-radius:12px;padding:18px;box-shadow:0 3px 12px #0000000a}
     .kpi .label{color:#666;font-size:13px}.kpi .value{font-size:26px;font-weight:800;margin-top:8px;color:#111}
     .table-wrap{overflow-x:auto;width:100%}.table{width:100%;border-collapse:collapse;min-width:760px;table-layout:auto;background:#fff}
@@ -53,7 +53,8 @@
     .toast{position:fixed;right:20px;bottom:20px;background:#111;color:#fff;padding:13px 16px;border-radius:9px;display:none;z-index:100;max-width:360px}.toast.show{display:block}
     .bottom-nav{display:none}.wa-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.wa-status{border:1px solid #d5d5d5;border-radius:12px;padding:18px;background:#fafafa}.wa-status strong{font-size:22px}.wa-ok{color:#087443;font-weight:800}.wa-off{color:#a40000;font-weight:800}.wa-actions{display:flex;gap:10px;flex-wrap:wrap}.hint{font-size:12px;color:#666;line-height:1.5}.secret-note{background:#111;color:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:1.5}.result-box{margin-top:14px;border:1px solid #ddd;border-radius:10px;padding:13px;background:#fff;white-space:pre-line}.
     .search-row{display:flex;gap:10px;margin-bottom:15px;align-items:center}.search-row input{flex:1}
-    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:18px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#111;border-top:1px solid #111;z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#fff;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{background:#fff;color:#111;border-radius:7px}}
+    @media(max-width:1100px){.dashboard-kpi{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:18px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#111;border-top:1px solid #111;z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#fff;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{background:#fff;color:#111;border-radius:7px}}
     @media(max-width:560px){.grid,.grid2{grid-template-columns:1fr 1fr;gap:9px}.card{padding:13px}.kpi .value{font-size:20px}.page-head{align-items:flex-start;flex-direction:column}.topbar{padding:0 14px}.table{min-width:760px}.customer-table{min-width:1000px}.login-card{padding:24px}.search-row{align-items:stretch}.search-row{flex-direction:column}.search-row input,.search-row select{width:100%}}
   </style>
   <link rel="manifest" href="manifest.json">
@@ -92,10 +93,11 @@
     <main class="main">
       <section id="page-dashboard" class="page">
         <div class="page-head"><div><h2>Dashboard</h2><p class="muted">Ringkasan billing RT/RW Net</p></div><button class="btn btn-primary" onclick="loadDashboard()">↻ Refresh</button></div>
-        <div class="grid">
+        <div class="grid dashboard-kpi">
           <div class="card kpi"><div class="label">Total Pelanggan</div><div id="kTotal" class="value">0</div></div>
           <div class="card kpi"><div class="label">Aktif</div><div id="kActive" class="value">0</div></div>
           <div class="card kpi"><div class="label">Belum Lunas</div><div id="kUnpaid" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Total Uang Tagihan</div><div id="kBillTotal" class="value">Rp 0</div></div>
           <div class="card kpi"><div class="label">Pendapatan</div><div id="kRevenue" class="value">Rp 0</div></div>
         </div>
         <div class="grid2" style="margin-top:16px">

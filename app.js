@@ -103,6 +103,7 @@ async function loadDashboard(){
   document.getElementById('kTotal').textContent=d.total_pelanggan||0;
   document.getElementById('kActive').textContent=d.aktif||0;
   document.getElementById('kUnpaid').textContent=d.belum_lunas||0;
+  document.getElementById('kBillTotal').textContent=rupiah(d.total_tagihan);
   document.getElementById('kRevenue').textContent=rupiah(d.pendapatan);
   document.getElementById('kCash').textContent=rupiah(d.cash ?? d.total_cash);
   document.getElementById('kTransfer').textContent=rupiah(d.transfer ?? d.total_transfer);
