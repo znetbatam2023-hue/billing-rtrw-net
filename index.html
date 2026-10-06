@@ -3,59 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#0b63ce">
   <meta name="description" content="Aplikasi Billing RT/RW Net">
   <title>RT/RW Net Billing</title>
   <style>
     *{box-sizing:border-box}
-    :root{--black:#111;--black2:#1c1c1c;--white:#fff;--bg:#fff;--text:#111;--muted:#666;--border:#d8d8d8;--green:#087443;--red:#a40000;--orange:#8a4b00}
-    html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:#fff;color:var(--text)}
-    body{overflow-x:hidden}
+    :root{--primary:#0b63ce;--primary2:#073b7a;--bg:#dbeafe;--card:#eff6ff;--text:#102a43;--muted:#52677d;--border:#9ec5f8;--green:#159957;--red:#b42318;--orange:#b45309}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#dbeafe 0%,#c7dff7 100%);color:var(--text)}
     button,input,select,textarea{font:inherit}
     button{cursor:pointer;border:0}
     .hidden{display:none!important}
-    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#111}
-    .login-card{width:100%;max-width:420px;background:#fff;border:1px solid #222;border-radius:18px;padding:30px;box-shadow:0 20px 60px #0008}
-    .logo{width:64px;height:64px;border-radius:16px;background:#111;color:#fff;display:grid;place-items:center;font-size:30px;margin-bottom:18px}
+    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#084b9e,#0b63ce)}
+    .login-card{width:100%;max-width:420px;background:#eff6ff;border-radius:24px;padding:30px;box-shadow:0 20px 60px #0003}
+    .logo{width:64px;height:64px;border-radius:18px;background:#9ec5f8;color:var(--primary2);display:grid;place-items:center;font-size:30px;margin-bottom:18px}
     h1,h2,h3,p{margin-top:0}.login h1{margin-bottom:8px}.muted{color:var(--muted)}
     .field{margin:14px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
-    .field input,.field select,.field textarea{width:100%;padding:12px 13px;border:1px solid #bbb;border-radius:9px;outline:none;background:#fff;color:#111}
-    .field input:focus,.field select:focus,.field textarea:focus{border-color:#111;box-shadow:0 0 0 2px #1111}
-    .btn{padding:11px 15px;border-radius:9px;font-weight:700;white-space:nowrap}
-    .btn-primary{background:#111;color:#fff}.btn-primary:hover{background:#000}
-    .btn-secondary{background:#fff;color:#111;border:1px solid #aaa}.btn-secondary:hover{background:#f2f2f2}
-    .btn-danger{background:#111;color:#fff;border:1px solid #111}.btn-danger:hover{background:#333}
+    .field input,.field select,.field textarea{width:100%;padding:13px;border:1px solid var(--border);border-radius:12px;outline:none;background:#dbeafe;color:var(--text)}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
+    .btn{padding:12px 16px;border-radius:11px;font-weight:700}
+    .btn-primary{background:var(--primary);color:#fff}.btn-secondary{background:#9ec5f8;color:#073b7a}.btn-danger{background:#fecaca;color:#991b1b}
     .full{width:100%}
-    .app{min-height:100vh;background:#fff}
-    .topbar{height:64px;background:#111;border-bottom:1px solid #111;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
-    .brand{font-weight:800;color:#fff;font-size:18px}.top-actions{display:flex;gap:8px}.top-actions .btn-secondary{background:#fff;color:#111;border-color:#fff}
-    .layout{display:flex;min-height:calc(100vh - 64px)}
-    .sidebar{width:230px;background:#111;border-right:1px solid #111;min-height:calc(100vh - 64px);padding:18px 12px;position:fixed;top:64px;bottom:0;color:#fff}
-    .nav-btn{width:100%;text-align:left;background:transparent;padding:13px 14px;border-radius:9px;margin-bottom:5px;color:#fff;font-weight:700}
-    .nav-btn.active,.nav-btn:hover{background:#fff;color:#111}
-    .main{margin-left:230px;width:calc(100% - 230px);padding:28px;max-width:none;background:#fff;min-height:calc(100vh - 64px)}
+    .app{min-height:100vh}.topbar{height:64px;background:var(--primary2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
+    .brand{font-weight:800;color:#dbeafe;font-size:18px}.top-actions{display:flex;gap:8px}
+    .layout{display:flex}.sidebar{width:230px;background:#dbeafe;border-right:1px solid var(--border);min-height:calc(100vh - 64px);padding:18px;position:fixed;top:64px;bottom:0}
+    .nav-btn{width:100%;text-align:left;background:transparent;padding:12px;border-radius:10px;margin-bottom:5px;color:#073b7a;font-weight:700}
+    .nav-btn.active,.nav-btn:hover{background:#eaf3ff;color:var(--primary)}
+    .main{margin-left:230px;width:calc(100% - 230px);padding:24px;max-width:1500px}
     .page-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.page-head h2{margin-bottom:4px}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.dashboard-kpi{grid-template-columns:repeat(5,1fr)}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-    .card{background:#fff;border:1px solid #d5d5d5;border-radius:12px;padding:18px;box-shadow:0 3px 12px #0000000a}
-    .kpi .label{color:#666;font-size:13px}.kpi .value{font-size:26px;font-weight:800;margin-top:8px;color:#111}
-    .table-wrap{overflow-x:auto;width:100%}.table{width:100%;border-collapse:collapse;min-width:760px;table-layout:auto;background:#fff}
-    .table th,.table td{padding:13px 11px;border-bottom:1px solid #ddd;text-align:left;font-size:14px;vertical-align:middle}
-    .table th{color:#555;font-size:11px;text-transform:uppercase;letter-spacing:.04em;background:#f7f7f7;white-space:nowrap}
-    .table tbody tr:hover{background:#fafafa}
-    .customer-table{min-width:1000px}
-    .customer-table th:first-child,.customer-table td:first-child{width:58px;text-align:center}
-    .customer-table th:nth-child(2){min-width:190px}.customer-table th:nth-child(3){min-width:130px}.customer-table th:nth-child(4){min-width:145px}
-    .customer-table th:nth-child(5){min-width:170px}.customer-table th:nth-child(6){min-width:125px}.customer-table th:nth-child(7){min-width:95px}.customer-table th:nth-child(8){min-width:170px}
-    .customer-table td:nth-child(2){white-space:normal}.customer-table td:nth-child(3),.customer-table td:nth-child(4),.customer-table td:nth-child(5),.customer-table td:nth-child(6),.customer-table td:nth-child(7),.customer-table td:nth-child(8){white-space:nowrap}
-    .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.paid{background:#eee;color:#111}.unpaid{background:#f4f4f4;color:#111}.inactive{background:#111;color:#fff}
-    .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal.show{display:flex}.modal-box{width:100%;max-width:560px;background:#fff;border-radius:14px;padding:22px;max-height:90vh;overflow:auto;border:1px solid #222}
-    .modal-head{display:flex;justify-content:space-between;align-items:center}.close{background:#111;color:#fff;border-radius:8px;padding:7px 10px}
-    .toast{position:fixed;right:20px;bottom:20px;background:#111;color:#fff;padding:13px 16px;border-radius:9px;display:none;z-index:100;max-width:360px}.toast.show{display:block}
-    .bottom-nav{display:none}.wa-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.wa-status{border:1px solid #d5d5d5;border-radius:12px;padding:18px;background:#fafafa}.wa-status strong{font-size:22px}.wa-ok{color:#087443;font-weight:800}.wa-off{color:#a40000;font-weight:800}.wa-actions{display:flex;gap:10px;flex-wrap:wrap}.hint{font-size:12px;color:#666;line-height:1.5}.secret-note{background:#111;color:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:1.5}.result-box{margin-top:14px;border:1px solid #ddd;border-radius:10px;padding:13px;background:#fff;white-space:pre-line}.
-    .search-row{display:flex;gap:10px;margin-bottom:15px;align-items:center}.search-row input{flex:1}
-    @media(max-width:1100px){.dashboard-kpi{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:18px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#111;border-top:1px solid #111;z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#fff;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{background:#fff;color:#111;border-radius:7px}}
-    @media(max-width:560px){.grid,.grid2{grid-template-columns:1fr 1fr;gap:9px}.card{padding:13px}.kpi .value{font-size:20px}.page-head{align-items:flex-start;flex-direction:column}.topbar{padding:0 14px}.table{min-width:760px}.customer-table{min-width:1000px}.login-card{padding:24px}.search-row{align-items:stretch}.search-row{flex-direction:column}.search-row input,.search-row select{width:100%}}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 4px 18px #14213d08}
+    .kpi .label{color:var(--muted);font-size:13px}.kpi .value{font-size:26px;font-weight:800;margin-top:8px}
+    .table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.table th{color:var(--muted);font-size:12px;text-transform:uppercase}
+    .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.paid{background:#e8f8ef;color:var(--green)}.unpaid{background:#fff3e0;color:var(--orange)}.inactive{background:#ffecec;color:var(--red)}
+    .modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal.show{display:flex}.modal-box{width:100%;max-width:560px;background:#eff6ff;border-radius:18px;padding:22px;max-height:90vh;overflow:auto}
+    .modal-head{display:flex;justify-content:space-between;align-items:center}.close{background:#9ec5f8;border-radius:9px;padding:7px 10px}
+    .toast{position:fixed;right:20px;bottom:20px;background:#073b7a;color:#fff;padding:13px 16px;border-radius:11px;display:none;z-index:100;max-width:360px}.toast.show{display:block}
+    .bottom-nav{display:none}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:16px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#dbeafe;border-top:1px solid var(--border);z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#607089;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{color:var(--primary)}}
+    @media(max-width:560px){.grid,.grid2{grid-template-columns:1fr 1fr;gap:9px}.card{padding:13px}.kpi .value{font-size:20px}.page-head{align-items:flex-start;flex-direction:column}.topbar{padding:0 14px}.table{min-width:620px}.login-card{padding:24px}}
   </style>
   <link rel="manifest" href="manifest.json">
 </head>
@@ -86,19 +71,18 @@
       <button class="nav-btn" data-page="invoices" onclick="showPage('invoices')">🧾 Tagihan</button>
       <button class="nav-btn" data-page="packages" onclick="showPage('packages')">📦 Paket</button>
       <button class="nav-btn" data-page="report" onclick="showPage('report')">📊 Laporan</button>
-      <button class="nav-btn" data-page="whatsapp" onclick="showPage('whatsapp')">💬 WhatsApp Masal</button>
+      <button class="nav-btn" data-page="whatsapp" onclick="showPage('whatsapp')">💬 WhatsApp</button>
       <button class="nav-btn" data-page="settings" onclick="showPage('settings')">⚙️ Pengaturan</button>
     </aside>
 
     <main class="main">
       <section id="page-dashboard" class="page">
         <div class="page-head"><div><h2>Dashboard</h2><p class="muted">Ringkasan billing RT/RW Net</p></div><button class="btn btn-primary" onclick="loadDashboard()">↻ Refresh</button></div>
-        <div class="grid dashboard-kpi">
+        <div class="grid">
           <div class="card kpi"><div class="label">Total Pelanggan</div><div id="kTotal" class="value">0</div></div>
           <div class="card kpi"><div class="label">Aktif</div><div id="kActive" class="value">0</div></div>
           <div class="card kpi"><div class="label">Belum Lunas</div><div id="kUnpaid" class="value">0</div></div>
-          <div class="card kpi"><div class="label">Total Uang Tagihan</div><div id="kBillTotal" class="value">Rp 0</div></div>
-          <div class="card kpi"><div class="label">Uang Belum Bayar</div><div id="kUnpaidMoney" class="value">Rp 0</div></div>
+          <div class="card kpi"><div class="label">Pendapatan</div><div id="kRevenue" class="value">Rp 0</div></div>
         </div>
         <div class="grid2" style="margin-top:16px">
           <div class="card"><h3>💵 Cash</h3><div id="kCash" style="font-size:28px;font-weight:800">Rp 0</div></div>
@@ -109,8 +93,8 @@
       <section id="page-customers" class="page hidden">
         <div class="page-head"><div><h2>Pelanggan</h2><p class="muted">Kelola pelanggan internet.</p></div><button class="btn btn-primary" onclick="openCustomer()">+ Pelanggan</button></div>
         <div class="card">
-          <div class="search-row"><input id="customerSearch" class="field" style="margin:0" placeholder="Cari nama, username, HP..." oninput="loadCustomers()"><select id="customerStatus" style="padding:12px;border:1px solid #bbb;border-radius:9px;background:#fff" onchange="loadCustomers()"><option value="">Semua</option><option>Aktif</option><option>Isolir</option><option>Nonaktif</option></select></div>
-          <div class="table-wrap"><table class="table customer-table"><thead><tr><th>No.</th><th>Nama</th><th>Username</th><th>No. HP</th><th>Paket</th><th>Harga Paket</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+          <div style="display:flex;gap:8px;margin-bottom:15px"><input id="customerSearch" class="field" style="margin:0;flex:1" placeholder="Cari nama, username, HP..." oninput="loadCustomers()"><select id="customerStatus" style="padding:12px;border:1px solid var(--border);border-radius:10px" onchange="loadCustomers()"><option value="">Semua</option><option>Aktif</option><option>Isolir</option><option>Nonaktif</option></select></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Nama</th><th>Username</th><th>No. HP</th><th>Paket</th><th>Harga Paket</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="customerRows"></tbody></table></div>
         </div>
       </section>
 
@@ -139,58 +123,28 @@
       </section>
 
       <section id="page-whatsapp" class="page hidden">
-        <div class="page-head">
-          <div><h2>💬 WhatsApp Masal</h2><p class="muted">Kirim tagihan kepada pelanggan yang belum membayar.</p></div>
-          <button class="btn btn-primary" onclick="sendWhatsappAll()">📤 Kirim Semua</button>
-        </div>
-
-        <div class="wa-grid">
+        <div class="page-head"><div><h2>WhatsApp Gateway</h2><p class="muted">Kirim tagihan belum lunas melalui wagate.id.</p></div><button class="btn btn-secondary" onclick="loadWhatsApp()">↻ Refresh</button></div>
+        <div class="grid2">
           <div class="card">
-            <h3>Kirim Tagihan</h3>
-            <div class="grid2">
-              <div class="field"><label>Periode</label><input id="waPeriod" type="month"></div>
-              <div class="field"><label>Status Tagihan</label><select id="waStatus"><option>Belum Lunas</option><option>Lunas</option></select></div>
-            </div>
-            <div class="grid2">
-              <div class="field"><label>Maksimal Pengiriman</label><select id="waLimit"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option></select></div>
-              <div class="field"><label>Template WhatsApp</label><input id="waTemplatePreview" value="tagihan_internet" readonly></div>
-            </div>
-            <div class="secret-note">🔒 Token WhatsApp disimpan di Google Apps Script Properties dan tidak ditampilkan di aplikasi.</div>
-            <div class="wa-actions" style="margin-top:15px">
-              <button class="btn btn-primary" onclick="sendWhatsappAll()">📤 Kirim Semua Belum Bayar</button>
-              <button class="btn btn-secondary" onclick="loadWhatsapp()">↻ Refresh Status</button>
-            </div>
-            <div id="waResult" class="result-box">Belum ada pengiriman.</div>
+            <h3>💬 Status Gateway</h3>
+            <div id="waStatus" class="badge unpaid">Memeriksa...</div>
+            <p class="muted" id="waConfigText" style="margin-top:10px"></p>
           </div>
-
           <div class="card">
-            <h3>Status WhatsApp</h3>
-            <div class="wa-status">
-              <div class="muted">Koneksi API</div>
-              <strong id="waConfigured">Memeriksa...</strong>
-              <p id="waConfigInfo" class="hint" style="margin-top:8px"></p>
-            </div>
-            <hr style="border:0;border-top:1px solid #ddd;margin:18px 0">
-            <h3>Pengiriman Otomatis Bulanan</h3>
-            <div class="field"><label>Tanggal Kirim</label><select id="waAutoDay">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
-            <label style="display:flex;gap:9px;align-items:center;font-weight:700;margin:12px 0"><input id="waAutoEnabled" type="checkbox"> Aktifkan otomatis bulanan</label>
-            <button class="btn btn-primary full" onclick="saveWhatsappAuto()">Simpan Jadwal Otomatis</button>
-            <p class="hint" style="margin-top:10px">Pengiriman otomatis dijalankan Apps Script sekitar pukul 08.00 pada tanggal yang dipilih, untuk invoice <b>Belum Lunas</b>.</p>
+            <h3>📅 Pengiriman Otomatis</h3>
+            <div class="field"><label>Tanggal setiap bulan</label><input id="waDay" type="number" min="1" max="28" value="1"></div>
+            <label style="display:flex;gap:8px;align-items:center;margin:8px 0 12px"><input id="waAuto" type="checkbox"> Aktifkan pengiriman otomatis</label>
+            <button class="btn btn-primary" onclick="saveWhatsAppAuto()">Simpan Jadwal</button>
           </div>
         </div>
-
         <div class="card" style="margin-top:16px">
-          <h3>Pengaturan WhatsApp API</h3>
-          <p class="muted">Masukkan data WhatsApp Cloud API. Access Token hanya disimpan di Google Apps Script.</p>
-          <div class="grid2">
-            <div class="field"><label>Access Token</label><input id="waAccessToken" type="password" placeholder="Masukkan token Meta (kosongkan jika tidak ingin mengubah)"></div>
-            <div class="field"><label>Phone Number ID</label><input id="waPhoneNumberId" placeholder="Contoh: 123456789012345"></div>
-            <div class="field"><label>Graph API Version</label><input id="waApiVersion" value="v24.0"></div>
-            <div class="field"><label>Nama Template</label><input id="waTemplateName" value="tagihan_internet"></div>
-            <div class="field"><label>Bahasa Template</label><input id="waTemplateLanguage" value="id"></div>
-            <div class="field"><label>Jeda per pesan (ms)</label><input id="waDelayMs" type="number" min="0" value="1500"></div>
+          <h3>📤 Kirim Tagihan Belum Lunas</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0">
+            <input id="waPeriod" type="month" style="padding:12px;border:1px solid var(--border);border-radius:10px">
+            <button class="btn btn-primary" onclick="sendAllWhatsApp()">📱 Kirim Semua Belum Lunas</button>
           </div>
-          <button class="btn btn-primary" onclick="saveWhatsappConfig()">💾 Simpan Pengaturan WhatsApp</button>
+          <p class="muted">Pesan dikirim satu per satu dengan jeda 2,5 detik. Gunakan nomor pelanggan yang sudah benar di menu Pelanggan.</p>
+          <div id="waResult" class="muted"></div>
         </div>
       </section>
 

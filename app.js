@@ -93,31 +93,17 @@ async function showPage(page){
     if(page==='packages') await loadPackages();
     if(page==='report') await loadReport();
     if(page==='settings') await loadSettings();
-    if(page==='whatsapp') await loadWhatsapp();
+    if(page==='whatsapp') await loadWhatsApp();
   }catch(e){showError(e)}
 }
 
 async function loadDashboard(){
-  // Ambil dashboard + seluruh tagihan. Fallback ini memastikan KPI
-  // Total Uang Tagihan tetap terisi walaupun deployment Apps Script
-  // masih menggunakan versi dashboard lama.
-  const [r, inv] = await Promise.all([
-    api('dashboard'),
-    api('invoices', {})
-  ]);
+  const r=await api('dashboard');
   const d=r.data||{};
-  const invoices=Array.isArray(inv.data)?inv.data:[];
-  const invoiceTotal=invoices.reduce((sum,i)=>sum+Number(String(i.nominal??0).replace(/[^0-9.-]/g,'' )||0),0);
-  const dashboardTotal=Number(d.total_tagihan||0);
-  const totalTagihan=dashboardTotal>0 ? dashboardTotal : invoiceTotal;
-  const unpaidTotal=invoices.filter(i=>String(i.status||'').trim().toLowerCase().replace(/\s+/g,' ')==='belum lunas')
-    .reduce((sum,i)=>sum+Number(String(i.nominal??0).replace(/[^0-9.-]/g,'')||0),0);
-
   document.getElementById('kTotal').textContent=d.total_pelanggan||0;
   document.getElementById('kActive').textContent=d.aktif||0;
   document.getElementById('kUnpaid').textContent=d.belum_lunas||0;
-  document.getElementById('kBillTotal').textContent=rupiah(totalTagihan);
-  document.getElementById('kUnpaidMoney').textContent=rupiah(unpaidTotal);
+  document.getElementById('kRevenue').textContent=rupiah(d.pendapatan);
   document.getElementById('kCash').textContent=rupiah(d.cash ?? d.total_cash);
   document.getElementById('kTransfer').textContent=rupiah(d.transfer ?? d.total_transfer);
 }
@@ -132,25 +118,17 @@ async function loadCustomers(){
   state.customers=r.data||[];
   state.packages=pkg.data||[];
   const paketMap=Object.fromEntries(state.packages.map(p=>[String(p.id),p]));
-  document.getElementById('customerRows').innerHTML=state.customers.map((c, idx)=>{
+  document.getElementById('customerRows').innerHTML=state.customers.map(c=>{
     const p=paketMap[String(c.paket_id||'')];
-    const paketLabel=p ? `${p.nama || ''}${p.kecepatan ? ' - ' + p.kecepatan : ''}`.trim() : (c.paket_id||'-');
-    const hargaPaket=p ? p.harga : c.harga;
+    const paketLabel=p ? `${p.nama} - ${p.kecepatan}` : (c.paket_id||'-');
     return `
     <tr>
-      <td><b>${idx + 1}</b></td>
       <td><b>${esc(c.nama)}</b><br><small>${esc(c.alamat||'')}</small></td>
-      <td>${esc(c.username)}</td>
-      <td>${esc(c.no_hp)}</td>
-      <td>${esc(paketLabel)}</td>
-      <td><b>${rupiah(hargaPaket)}</b></td>
+      <td>${esc(c.username)}</td><td>${esc(c.no_hp)}</td><td>${esc(paketLabel)}</td>
       <td><span class="badge ${String(c.status).toLowerCase()==='aktif'?'paid':String(c.status).toLowerCase()==='nonaktif'?'inactive':'unpaid'}">${esc(c.status)}</span></td>
-      <td>
-        <button class="btn btn-secondary" onclick='openCustomer(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Edit</button>
-        <button class="btn btn-danger" onclick='deleteCustomer(${JSON.stringify(c.id).replace(/'/g,"&#39;")}, ${JSON.stringify(c.nama).replace(/'/g,"&#39;")})'>Hapus</button>
-      </td>
+      <td><button class="btn btn-secondary" onclick='openCustomer(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Edit</button></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="8">Belum ada pelanggan.</td></tr>';
+  }).join('') || '<tr><td colspan="6">Belum ada pelanggan.</td></tr>';
 }
 async function loadPackages(){
   const r=await api('packages'); state.packages=r.data||[];
@@ -158,56 +136,16 @@ async function loadPackages(){
     <tr><td><b>${esc(p.nama)}</b></td><td>${esc(p.kecepatan)}</td><td>${rupiah(p.harga)}</td><td>${esc(p.status)}</td>
     <td><button class="btn btn-secondary" onclick='openPackage(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Edit</button></td></tr>`).join('') || '<tr><td colspan="5">Belum ada paket.</td></tr>';
 }
-function normalizePeriodClient(v){
-  const s=String(v??'').trim();
-  const m=s.match(/^(\d{4})-(\d{1,2})/);
-  return m ? m[1]+'-'+String(m[2]).padStart(2,'0') : s;
-}
-
 async function loadInvoices(){
-  const periode=normalizePeriodClient(document.getElementById('invoicePeriod').value||currentMonth());
+  const periode=document.getElementById('invoicePeriod').value||currentMonth();
   const status=document.getElementById('invoiceStatus').value;
-  const tbody=document.getElementById('invoiceRows');
-  tbody.innerHTML='<tr><td colspan="6">Memuat data tagihan...</td></tr>';
-  try{
-    // Ambil SEMUA tagihan dari server terlebih dahulu. Ini membuat frontend tetap
-    // kompatibel walaupun deployment Apps Script masih menggunakan versi filter lama.
-    let r=await api('invoices',{});
-    let rows=Array.isArray(r.data)?r.data:(Array.isArray(r.invoices)?r.invoices:(Array.isArray(r.rows)?r.rows:[]));
-
-    // Jika server lama mengembalikan kosong saat tanpa periode, coba endpoint dengan periode.
-    if(!rows.length){
-      try{
-        const r2=await api('invoices',{periode:periode});
-        rows=Array.isArray(r2.data)?r2.data:(Array.isArray(r2.invoices)?r2.invoices:(Array.isArray(r2.rows)?r2.rows:[]));
-      }catch(_e){}
-    }
-
-    // Normalisasi periode di browser dan filter di sini.
-    rows=rows.map(i=>Object.assign({},i,{periode:normalizePeriodClient(i.periode)}));
-    rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
-    if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===String(status).trim().toLowerCase());
-    state.invoices=rows;
-
-    if(!rows.length){
-      let extra='';
-      try{
-        const d=await api('invoice_debug');
-        if(d && d.data) extra=`<br><small style="color:#666">Data di Sheet: ${Number(d.data.total||0)} baris. Periode terbaca: ${esc(d.data.periods||'-')}.</small>`;
-      }catch(_e){}
-      tbody.innerHTML='<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.'+extra+'</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML=state.invoices.map(i=>`
-      <tr><td><b>${esc(i.nama||i.pelanggan||'')}</b><br><small>${esc(i.no_hp||'')}</small></td><td>${esc(normalizePeriodClient(i.periode))}</td>
-      <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo||'-')}</td>
-      <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status||'-')}</span></td>
-      <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('');
-  }catch(e){
-    tbody.innerHTML='<tr><td colspan="6" style="color:#b00020">Gagal memuat tagihan: '+esc(e.message||e)+'</td></tr>';
-    showError(e);
-  }
+  const r=await api('invoices',{periode,status});
+  state.invoices=r.data||[];
+  document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
+    <tr><td><b>${esc(i.nama)}</b><br><small>${esc(i.no_hp)}</small></td><td>${esc(i.periode)}</td>
+    <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo)}</td>
+    <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status)}</span></td>
+    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada tagihan.</td></tr>';
 }
 async function generateInvoices(){
   const periode=document.getElementById('invoicePeriod').value||currentMonth();
@@ -245,84 +183,6 @@ async function saveSettings(){
   }catch(e){showError(e)}
 }
 
-async function loadWhatsapp(){
-  const period=document.getElementById('waPeriod');
-  if(period && !period.value) period.value=currentMonth();
-  try{
-    const [cfg,auto]=await Promise.all([
-      api('whatsapp_config'),
-      api('get_whatsapp_auto')
-    ]);
-    const c=cfg.data||{};
-    document.getElementById('waConfigured').textContent=c.configured?'AKTIF / TERHUBUNG':'BELUM DIATUR';
-    document.getElementById('waConfigured').className=c.configured?'wa-ok':'wa-off';
-    document.getElementById('waConfigInfo').textContent=c.configured
-      ? `Phone Number ID: ${c.phoneNumberId || '-'} • Template: ${c.templateName || '-'} • API: ${c.apiVersion || '-'}`
-      : 'Isi Access Token dan Phone Number ID pada pengaturan di bawah.';
-    document.getElementById('waPhoneNumberId').value=c.phoneNumberId||'';
-    document.getElementById('waApiVersion').value=c.apiVersion||'v24.0';
-    document.getElementById('waTemplateName').value=c.templateName||'tagihan_internet';
-    document.getElementById('waTemplatePreview').value=c.templateName||'tagihan_internet';
-    document.getElementById('waTemplateLanguage').value=c.templateLanguage||'id';
-    document.getElementById('waDelayMs').value=c.delayMs ?? 1500;
-    const a=auto||{};
-    document.getElementById('waAutoEnabled').checked=!!a.enabled;
-    document.getElementById('waAutoDay').value=String(a.day||1);
-  }catch(e){showError(e)}
-}
-
-async function saveWhatsappConfig(){
-  try{
-    const body={
-      phoneNumberId:document.getElementById('waPhoneNumberId').value.trim(),
-      apiVersion:document.getElementById('waApiVersion').value.trim() || 'v24.0',
-      templateName:document.getElementById('waTemplateName').value.trim() || 'tagihan_internet',
-      templateLanguage:document.getElementById('waTemplateLanguage').value.trim() || 'id',
-      delayMs:document.getElementById('waDelayMs').value || 1500
-    };
-    const token=document.getElementById('waAccessToken').value.trim();
-    if(token) body.accessToken=token;
-    const r=await api('save_whatsapp_config',body);
-    document.getElementById('waAccessToken').value='';
-    toast(r.message||'Pengaturan WhatsApp tersimpan');
-    await loadWhatsapp();
-  }catch(e){showError(e)}
-}
-
-async function sendWhatsappAll(){
-  const periode=document.getElementById('waPeriod').value||currentMonth();
-  const status=document.getElementById('waStatus').value||'Belum Lunas';
-  const limit=Number(document.getElementById('waLimit').value||100);
-  if(status==='Belum Lunas' && !confirm(`Kirim tagihan WhatsApp untuk periode ${periode} kepada pelanggan yang belum bayar?\n\nMaksimal ${limit} pelanggan. Pelanggan yang sudah pernah terkirim untuk invoice yang sama tidak akan dikirim ulang.`)) return;
-  try{
-    document.getElementById('waResult').textContent='Sedang mengirim... Mohon jangan menutup halaman.';
-    const r=await api('whatsapp_send_all',{periode,status,limit});
-    const sent=(r.sent||[]).length;
-    const failed=(r.failed||[]).length;
-    let detail=`${r.message||'Selesai.'}\n\nTerkirim: ${sent}\nGagal: ${failed}`;
-    if(failed){
-      detail+='\n\nDetail gagal:\n'+r.failed.slice(0,10).map(x=>`• ${x.nama||'-'}: ${x.error||'Gagal'}`).join('\n');
-      if(r.failed.length>10) detail+='\n• ...';
-    }
-    document.getElementById('waResult').textContent=detail;
-    toast(r.message||'Pengiriman selesai');
-  }catch(e){
-    document.getElementById('waResult').textContent='Gagal mengirim: '+e.message;
-    showError(e);
-  }
-}
-
-async function saveWhatsappAuto(){
-  try{
-    const enabled=document.getElementById('waAutoEnabled').checked;
-    const day=Number(document.getElementById('waAutoDay').value||1);
-    if(enabled && !confirm(`Aktifkan pengiriman WhatsApp otomatis setiap tanggal ${day} sekitar pukul 08.00?`)) return;
-    const r=await api('set_whatsapp_auto',{enabled,day});
-    toast(r.message||'Jadwal otomatis tersimpan');
-    await loadWhatsapp();
-  }catch(e){showError(e)}
-}
-
 function openCustomer(c={}){
   document.getElementById('modalTitle').textContent=c.id?'Edit Pelanggan':'Tambah Pelanggan';
   document.getElementById('modalBody').innerHTML=`
@@ -343,16 +203,6 @@ async function saveCustomer(c){
     toast(r.message||'Tersimpan');closeModal();await loadCustomers();
   }catch(e){showError(e)}
 }
-async function deleteCustomer(id,nama){
-  if(!id) return;
-  if(!confirm(`Hapus pelanggan "${nama}"?\n\nData tagihan dan pembayaran yang sudah ada tidak akan dihapus.`)) return;
-  try{
-    const r=await api('customer_delete',{id});
-    toast(r.message||'Pelanggan dihapus');
-    await loadCustomers();
-    await loadDashboard();
-  }catch(e){showError(e)}
-}
 function openPackage(p={}){
   document.getElementById('modalTitle').textContent=p.id?'Edit Paket':'Tambah Paket';
   document.getElementById('modalBody').innerHTML=`
@@ -369,35 +219,55 @@ async function savePackage(p){
 }
 function payInvoice(i){
   document.getElementById('modalTitle').textContent='Catat Pembayaran';
-  const amount=Number(i.nominal)||0;
   document.getElementById('modalBody').innerHTML=`
-    <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px">
-      <div style="font-size:18px;font-weight:800">${esc(i.nama||'-')}</div>
-      <div class="muted">Periode ${esc(normalizePeriodClient(i.periode))} · Jatuh tempo ${esc(i.jatuh_tempo||'-')}</div>
-      <div style="font-size:25px;font-weight:900;margin-top:7px">${rupiah(amount)}</div>
-    </div>
-    <div class="field"><label>Nominal Bayar</label><input id="payNominal" type="number" min="1" value="${amount}"></div>
-    <div class="field"><label>Metode Pembayaran</label><select id="payMetode"><option value="Cash">Cash</option><option value="Transfer">Transfer</option></select></div>
-    <div class="field"><label>Tanggal Bayar</label><input id="payTanggal" type="date" value="${todayClient()}"></div>
-    <div class="field"><label>Catatan</label><input id="payCatatan" placeholder="Opsional"></div>
-    <button class="btn btn-primary full" onclick='savePayment(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✓ Simpan Pembayaran</button>`;
+    <p><b>${esc(i.nama)}</b><br>Periode ${esc(i.periode)}<br>Total ${rupiah(i.nominal)}</p>
+    <div class="field"><label>Nominal Bayar</label><input id="payNominal" type="number" value="${Number(i.nominal)||0}"></div>
+    <div class="field"><label>Metode</label><select id="payMetode"><option>Cash</option><option>Transfer</option><option>QRIS</option><option>E-Wallet</option></select></div>
+    <div class="field"><label>Catatan</label><input id="payCatatan"></div>
+    <button class="btn btn-primary full" onclick='savePayment(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Simpan Pembayaran</button>`;
   document.getElementById('modal').classList.add('show');
 }
-function todayClient(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
 async function savePayment(i){
-  const nominal=Number(document.getElementById('payNominal').value||0);
-  const total=Number(i.nominal||0);
-  if(nominal<=0){showError(new Error('Nominal pembayaran harus lebih dari 0.'));return}
-  if(nominal<total){showError(new Error('Nominal pembayaran harus sama dengan atau lebih besar dari total tagihan.'));return}
-  try{
-    const r=await api('pay',{tagihan_id:i.id,pelanggan_id:i.pelanggan_id,nominal:nominal,metode:document.getElementById('payMetode').value,tanggal_bayar:document.getElementById('payTanggal').value,catatan:document.getElementById('payCatatan').value});
-    toast(r.message||'Pembayaran berhasil');
-    closeModal();
-    await Promise.all([loadInvoices(),loadDashboard(),loadReport()]);
-  }catch(e){showError(e)}
+  try{const r=await api('pay',{tagihan_id:i.id,pelanggan_id:i.pelanggan_id,nominal:payNominal.value,metode:payMetode.value,catatan:payCatatan.value});toast(r.message||'Pembayaran berhasil');closeModal();await loadInvoices();await loadDashboard();}catch(e){showError(e)}
 }
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 boot();
+
+
+async function loadWhatsApp(){
+  const period=document.getElementById('waPeriod');
+  if(period && !period.value) period.value=currentMonth();
+  try{
+    const [cfg,auto]=await Promise.all([api('whatsapp_config'),api('get_whatsapp_auto')]);
+    const d=cfg.data||{};
+    const status=document.getElementById('waStatus');
+    status.textContent=d.configured?'Terhubung / API Key tersimpan':'Belum dikonfigurasi';
+    status.className='badge '+(d.configured?'paid':'unpaid');
+    document.getElementById('waConfigText').textContent=d.configured ? ('API: '+d.apiUrl+' • Jeda: '+d.delayMs+' ms') : 'Isi WAGATE_API_KEY di Script Properties Apps Script.';
+    const a=auto||{};
+    document.getElementById('waDay').value=a.day||1;
+    document.getElementById('waAuto').checked=!!a.enabled;
+  }catch(e){showError(e)}
+}
+
+async function sendAllWhatsApp(){
+  const periode=document.getElementById('waPeriod').value||currentMonth();
+  if(!confirm('Kirim semua tagihan Belum Lunas periode '+periode+' melalui WhatsApp?\n\nPastikan nomor pelanggan sudah benar.')) return;
+  const result=document.getElementById('waResult');
+  result.textContent='Sedang mengirim. Jangan tutup halaman...';
+  try{
+    const r=await api('whatsapp_send_all',{periode,status:'Belum Lunas',limit:100});
+    result.innerHTML='<b>'+esc(r.message||'Selesai')+'</b>';
+    toast(r.message||'Pengiriman selesai');
+  }catch(e){result.textContent='Gagal: '+e.message;showError(e)}
+}
+
+async function saveWhatsAppAuto(){
+  const enabled=document.getElementById('waAuto').checked;
+  const day=Number(document.getElementById('waDay').value||1);
+  try{
+    const r=await api('set_whatsapp_auto',{enabled,day});
+    toast(r.message||'Jadwal tersimpan');
+    await loadWhatsApp();
+  }catch(e){showError(e)}
+}
