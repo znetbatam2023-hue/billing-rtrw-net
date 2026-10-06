@@ -98,12 +98,23 @@ async function showPage(page){
 }
 
 async function loadDashboard(){
-  const r=await api('dashboard');
+  // Ambil dashboard + seluruh tagihan. Fallback ini memastikan KPI
+  // Total Uang Tagihan tetap terisi walaupun deployment Apps Script
+  // masih menggunakan versi dashboard lama.
+  const [r, inv] = await Promise.all([
+    api('dashboard'),
+    api('invoices', {})
+  ]);
   const d=r.data||{};
+  const invoices=Array.isArray(inv.data)?inv.data:[];
+  const invoiceTotal=invoices.reduce((sum,i)=>sum+Number(String(i.nominal??0).replace(/[^0-9.-]/g,'' )||0),0);
+  const dashboardTotal=Number(d.total_tagihan||0);
+  const totalTagihan=dashboardTotal>0 ? dashboardTotal : invoiceTotal;
+
   document.getElementById('kTotal').textContent=d.total_pelanggan||0;
   document.getElementById('kActive').textContent=d.aktif||0;
   document.getElementById('kUnpaid').textContent=d.belum_lunas||0;
-  document.getElementById('kBillTotal').textContent=rupiah(d.total_tagihan);
+  document.getElementById('kBillTotal').textContent=rupiah(totalTagihan);
   document.getElementById('kRevenue').textContent=rupiah(d.pendapatan);
   document.getElementById('kCash').textContent=rupiah(d.cash ?? d.total_cash);
   document.getElementById('kTransfer').textContent=rupiah(d.transfer ?? d.total_transfer);
