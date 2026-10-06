@@ -231,4 +231,3 @@ async function savePayment(i){
 }
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 boot();
-
