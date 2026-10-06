@@ -117,17 +117,25 @@ async function loadCustomers(){
   state.customers=r.data||[];
   state.packages=pkg.data||[];
   const paketMap=Object.fromEntries(state.packages.map(p=>[String(p.id),p]));
-  document.getElementById('customerRows').innerHTML=state.customers.map(c=>{
+  document.getElementById('customerRows').innerHTML=state.customers.map((c, idx)=>{
     const p=paketMap[String(c.paket_id||'')];
-    const paketLabel=p ? `${p.nama} - ${p.kecepatan}` : (c.paket_id||'-');
+    const paketLabel=p ? `${p.nama || ''}${p.kecepatan ? ' - ' + p.kecepatan : ''}`.trim() : (c.paket_id||'-');
+    const hargaPaket=p ? p.harga : c.harga;
     return `
     <tr>
+      <td><b>${idx + 1}</b></td>
       <td><b>${esc(c.nama)}</b><br><small>${esc(c.alamat||'')}</small></td>
-      <td>${esc(c.username)}</td><td>${esc(c.no_hp)}</td><td>${esc(paketLabel)}</td>
+      <td>${esc(c.username)}</td>
+      <td>${esc(c.no_hp)}</td>
+      <td>${esc(paketLabel)}</td>
+      <td><b>${rupiah(hargaPaket)}</b></td>
       <td><span class="badge ${String(c.status).toLowerCase()==='aktif'?'paid':String(c.status).toLowerCase()==='nonaktif'?'inactive':'unpaid'}">${esc(c.status)}</span></td>
-      <td><button class="btn btn-secondary" onclick='openCustomer(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Edit</button></td>
+      <td>
+        <button class="btn btn-secondary" onclick='openCustomer(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Edit</button>
+        <button class="btn btn-danger" onclick='deleteCustomer(${JSON.stringify(c.id).replace(/'/g,"&#39;")}, ${JSON.stringify(c.nama).replace(/'/g,"&#39;")})'>Hapus</button>
+      </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6">Belum ada pelanggan.</td></tr>';
+  }).join('') || '<tr><td colspan="8">Belum ada pelanggan.</td></tr>';
 }
 async function loadPackages(){
   const r=await api('packages'); state.packages=r.data||[];
@@ -200,6 +208,16 @@ async function saveCustomer(c){
   try{
     const r=await api('customer_save',{id:c.id||'',nama:fNama.value,username:fUsername.value,password:fPassword.value,no_hp:fHp.value,alamat:fAlamat.value,paket_id:fPaket.value,harga:fHarga.value,status:fStatus.value});
     toast(r.message||'Tersimpan');closeModal();await loadCustomers();
+  }catch(e){showError(e)}
+}
+async function deleteCustomer(id,nama){
+  if(!id) return;
+  if(!confirm(`Hapus pelanggan "${nama}"?\n\nData tagihan dan pembayaran yang sudah ada tidak akan dihapus.`)) return;
+  try{
+    const r=await api('customer_delete',{id});
+    toast(r.message||'Pelanggan dihapus');
+    await loadCustomers();
+    await loadDashboard();
   }catch(e){showError(e)}
 }
 function openPackage(p={}){
