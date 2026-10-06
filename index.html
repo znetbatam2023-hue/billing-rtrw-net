@@ -51,7 +51,7 @@
     .modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal.show{display:flex}.modal-box{width:100%;max-width:560px;background:#fff;border-radius:14px;padding:22px;max-height:90vh;overflow:auto;border:1px solid #222}
     .modal-head{display:flex;justify-content:space-between;align-items:center}.close{background:#111;color:#fff;border-radius:8px;padding:7px 10px}
     .toast{position:fixed;right:20px;bottom:20px;background:#111;color:#fff;padding:13px 16px;border-radius:9px;display:none;z-index:100;max-width:360px}.toast.show{display:block}
-    .bottom-nav{display:none}
+    .bottom-nav{display:none}.wa-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.wa-status{border:1px solid #d5d5d5;border-radius:12px;padding:18px;background:#fafafa}.wa-status strong{font-size:22px}.wa-ok{color:#087443;font-weight:800}.wa-off{color:#a40000;font-weight:800}.wa-actions{display:flex;gap:10px;flex-wrap:wrap}.hint{font-size:12px;color:#666;line-height:1.5}.secret-note{background:#111;color:#fff;border-radius:10px;padding:12px;font-size:12px;line-height:1.5}.result-box{margin-top:14px;border:1px solid #ddd;border-radius:10px;padding:13px;background:#fff;white-space:pre-line}.
     .search-row{display:flex;gap:10px;margin-bottom:15px;align-items:center}.search-row input{flex:1}
     @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:18px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#111;border-top:1px solid #111;z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#fff;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{background:#fff;color:#111;border-radius:7px}}
     @media(max-width:560px){.grid,.grid2{grid-template-columns:1fr 1fr;gap:9px}.card{padding:13px}.kpi .value{font-size:20px}.page-head{align-items:flex-start;flex-direction:column}.topbar{padding:0 14px}.table{min-width:760px}.customer-table{min-width:1000px}.login-card{padding:24px}.search-row{align-items:stretch}.search-row{flex-direction:column}.search-row input,.search-row select{width:100%}}
@@ -85,6 +85,7 @@
       <button class="nav-btn" data-page="invoices" onclick="showPage('invoices')">🧾 Tagihan</button>
       <button class="nav-btn" data-page="packages" onclick="showPage('packages')">📦 Paket</button>
       <button class="nav-btn" data-page="report" onclick="showPage('report')">📊 Laporan</button>
+      <button class="nav-btn" data-page="whatsapp" onclick="showPage('whatsapp')">💬 WhatsApp Masal</button>
       <button class="nav-btn" data-page="settings" onclick="showPage('settings')">⚙️ Pengaturan</button>
     </aside>
 
@@ -135,6 +136,62 @@
         <div class="grid2" style="margin-top:16px"><div class="card"><h3>Cash</h3><div id="rCash" style="font-size:26px;font-weight:800">Rp 0</div></div><div class="card"><h3>Transfer</h3><div id="rTransfer" style="font-size:26px;font-weight:800">Rp 0</div></div></div>
       </section>
 
+      <section id="page-whatsapp" class="page hidden">
+        <div class="page-head">
+          <div><h2>💬 WhatsApp Masal</h2><p class="muted">Kirim tagihan kepada pelanggan yang belum membayar.</p></div>
+          <button class="btn btn-primary" onclick="sendWhatsappAll()">📤 Kirim Semua</button>
+        </div>
+
+        <div class="wa-grid">
+          <div class="card">
+            <h3>Kirim Tagihan</h3>
+            <div class="grid2">
+              <div class="field"><label>Periode</label><input id="waPeriod" type="month"></div>
+              <div class="field"><label>Status Tagihan</label><select id="waStatus"><option>Belum Lunas</option><option>Lunas</option></select></div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label>Maksimal Pengiriman</label><select id="waLimit"><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option></select></div>
+              <div class="field"><label>Template WhatsApp</label><input id="waTemplatePreview" value="tagihan_internet" readonly></div>
+            </div>
+            <div class="secret-note">🔒 Token WhatsApp disimpan di Google Apps Script Properties dan tidak ditampilkan di aplikasi.</div>
+            <div class="wa-actions" style="margin-top:15px">
+              <button class="btn btn-primary" onclick="sendWhatsappAll()">📤 Kirim Semua Belum Bayar</button>
+              <button class="btn btn-secondary" onclick="loadWhatsapp()">↻ Refresh Status</button>
+            </div>
+            <div id="waResult" class="result-box">Belum ada pengiriman.</div>
+          </div>
+
+          <div class="card">
+            <h3>Status WhatsApp</h3>
+            <div class="wa-status">
+              <div class="muted">Koneksi API</div>
+              <strong id="waConfigured">Memeriksa...</strong>
+              <p id="waConfigInfo" class="hint" style="margin-top:8px"></p>
+            </div>
+            <hr style="border:0;border-top:1px solid #ddd;margin:18px 0">
+            <h3>Pengiriman Otomatis Bulanan</h3>
+            <div class="field"><label>Tanggal Kirim</label><select id="waAutoDay">${Array.from({length:28},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
+            <label style="display:flex;gap:9px;align-items:center;font-weight:700;margin:12px 0"><input id="waAutoEnabled" type="checkbox"> Aktifkan otomatis bulanan</label>
+            <button class="btn btn-primary full" onclick="saveWhatsappAuto()">Simpan Jadwal Otomatis</button>
+            <p class="hint" style="margin-top:10px">Pengiriman otomatis dijalankan Apps Script sekitar pukul 08.00 pada tanggal yang dipilih, untuk invoice <b>Belum Lunas</b>.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Pengaturan WhatsApp API</h3>
+          <p class="muted">Masukkan data WhatsApp Cloud API. Access Token hanya disimpan di Google Apps Script.</p>
+          <div class="grid2">
+            <div class="field"><label>Access Token</label><input id="waAccessToken" type="password" placeholder="Masukkan token Meta (kosongkan jika tidak ingin mengubah)"></div>
+            <div class="field"><label>Phone Number ID</label><input id="waPhoneNumberId" placeholder="Contoh: 123456789012345"></div>
+            <div class="field"><label>Graph API Version</label><input id="waApiVersion" value="v24.0"></div>
+            <div class="field"><label>Nama Template</label><input id="waTemplateName" value="tagihan_internet"></div>
+            <div class="field"><label>Bahasa Template</label><input id="waTemplateLanguage" value="id"></div>
+            <div class="field"><label>Jeda per pesan (ms)</label><input id="waDelayMs" type="number" min="0" value="1500"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveWhatsappConfig()">💾 Simpan Pengaturan WhatsApp</button>
+        </div>
+      </section>
+
       <section id="page-settings" class="page hidden">
         <div class="page-head"><div><h2>Pengaturan</h2><p class="muted">Pengaturan dasar aplikasi.</p></div></div>
         <div class="card">
@@ -156,6 +213,7 @@
     <button data-page="customers" onclick="showPage('customers')">👥<br>Pelanggan</button>
     <button data-page="invoices" onclick="showPage('invoices')">🧾<br>Tagihan</button>
     <button data-page="report" onclick="showPage('report')">📊<br>Laporan</button>
+    <button data-page="whatsapp" onclick="showPage('whatsapp')">💬<br>WA</button>
     <button data-page="settings" onclick="showPage('settings')">⚙️<br>Setting</button>
   </div>
 </div>

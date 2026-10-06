@@ -93,6 +93,7 @@ async function showPage(page){
     if(page==='packages') await loadPackages();
     if(page==='report') await loadReport();
     if(page==='settings') await loadSettings();
+    if(page==='whatsapp') await loadWhatsapp();
   }catch(e){showError(e)}
 }
 
@@ -187,6 +188,84 @@ async function saveSettings(){
       AUTO_GABUNG_TUNGGAKAN:document.getElementById('sMerge').value
     });
     toast(r.message||'Tersimpan');
+  }catch(e){showError(e)}
+}
+
+async function loadWhatsapp(){
+  const period=document.getElementById('waPeriod');
+  if(period && !period.value) period.value=currentMonth();
+  try{
+    const [cfg,auto]=await Promise.all([
+      api('whatsapp_config'),
+      api('get_whatsapp_auto')
+    ]);
+    const c=cfg.data||{};
+    document.getElementById('waConfigured').textContent=c.configured?'AKTIF / TERHUBUNG':'BELUM DIATUR';
+    document.getElementById('waConfigured').className=c.configured?'wa-ok':'wa-off';
+    document.getElementById('waConfigInfo').textContent=c.configured
+      ? `Phone Number ID: ${c.phoneNumberId || '-'} • Template: ${c.templateName || '-'} • API: ${c.apiVersion || '-'}`
+      : 'Isi Access Token dan Phone Number ID pada pengaturan di bawah.';
+    document.getElementById('waPhoneNumberId').value=c.phoneNumberId||'';
+    document.getElementById('waApiVersion').value=c.apiVersion||'v24.0';
+    document.getElementById('waTemplateName').value=c.templateName||'tagihan_internet';
+    document.getElementById('waTemplatePreview').value=c.templateName||'tagihan_internet';
+    document.getElementById('waTemplateLanguage').value=c.templateLanguage||'id';
+    document.getElementById('waDelayMs').value=c.delayMs ?? 1500;
+    const a=auto||{};
+    document.getElementById('waAutoEnabled').checked=!!a.enabled;
+    document.getElementById('waAutoDay').value=String(a.day||1);
+  }catch(e){showError(e)}
+}
+
+async function saveWhatsappConfig(){
+  try{
+    const body={
+      phoneNumberId:document.getElementById('waPhoneNumberId').value.trim(),
+      apiVersion:document.getElementById('waApiVersion').value.trim() || 'v24.0',
+      templateName:document.getElementById('waTemplateName').value.trim() || 'tagihan_internet',
+      templateLanguage:document.getElementById('waTemplateLanguage').value.trim() || 'id',
+      delayMs:document.getElementById('waDelayMs').value || 1500
+    };
+    const token=document.getElementById('waAccessToken').value.trim();
+    if(token) body.accessToken=token;
+    const r=await api('save_whatsapp_config',body);
+    document.getElementById('waAccessToken').value='';
+    toast(r.message||'Pengaturan WhatsApp tersimpan');
+    await loadWhatsapp();
+  }catch(e){showError(e)}
+}
+
+async function sendWhatsappAll(){
+  const periode=document.getElementById('waPeriod').value||currentMonth();
+  const status=document.getElementById('waStatus').value||'Belum Lunas';
+  const limit=Number(document.getElementById('waLimit').value||100);
+  if(status==='Belum Lunas' && !confirm(`Kirim tagihan WhatsApp untuk periode ${periode} kepada pelanggan yang belum bayar?\n\nMaksimal ${limit} pelanggan. Pelanggan yang sudah pernah terkirim untuk invoice yang sama tidak akan dikirim ulang.`)) return;
+  try{
+    document.getElementById('waResult').textContent='Sedang mengirim... Mohon jangan menutup halaman.';
+    const r=await api('whatsapp_send_all',{periode,status,limit});
+    const sent=(r.sent||[]).length;
+    const failed=(r.failed||[]).length;
+    let detail=`${r.message||'Selesai.'}\n\nTerkirim: ${sent}\nGagal: ${failed}`;
+    if(failed){
+      detail+='\n\nDetail gagal:\n'+r.failed.slice(0,10).map(x=>`• ${x.nama||'-'}: ${x.error||'Gagal'}`).join('\n');
+      if(r.failed.length>10) detail+='\n• ...';
+    }
+    document.getElementById('waResult').textContent=detail;
+    toast(r.message||'Pengiriman selesai');
+  }catch(e){
+    document.getElementById('waResult').textContent='Gagal mengirim: '+e.message;
+    showError(e);
+  }
+}
+
+async function saveWhatsappAuto(){
+  try{
+    const enabled=document.getElementById('waAutoEnabled').checked;
+    const day=Number(document.getElementById('waAutoDay').value||1);
+    if(enabled && !confirm(`Aktifkan pengiriman WhatsApp otomatis setiap tanggal ${day} sekitar pukul 08.00?`)) return;
+    const r=await api('set_whatsapp_auto',{enabled,day});
+    toast(r.message||'Jadwal otomatis tersimpan');
+    await loadWhatsapp();
   }catch(e){showError(e)}
 }
 
