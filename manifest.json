@@ -1,0 +1,17 @@
+{
+  "name": "RT/RW Net Billing",
+  "short_name": "Billing RT/RW",
+  "description": "Aplikasi billing pelanggan internet RT/RW Net.",
+  "lang": "id-ID",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0b63ce",
+  "categories": [
+    "business",
+    "finance",
+    "utilities"
+  ]
+}

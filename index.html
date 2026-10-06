@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b63ce">
+  <meta name="description" content="Aplikasi Billing RT/RW Net">
+  <title>RT/RW Net Billing</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{--primary:#0b63ce;--primary2:#084b9e;--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--border:#e5eaf1;--green:#159957;--red:#d9363e;--orange:#e68a00}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer;border:0}
+    .hidden{display:none!important}
+    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#084b9e,#0b63ce)}
+    .login-card{width:100%;max-width:420px;background:#fff;border-radius:24px;padding:30px;box-shadow:0 20px 60px #0003}
+    .logo{width:64px;height:64px;border-radius:18px;background:#e8f2ff;color:var(--primary);display:grid;place-items:center;font-size:30px;margin-bottom:18px}
+    h1,h2,h3,p{margin-top:0}.login h1{margin-bottom:8px}.muted{color:var(--muted)}
+    .field{margin:14px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+    .field input,.field select,.field textarea{width:100%;padding:13px;border:1px solid var(--border);border-radius:12px;outline:none;background:#fff}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
+    .btn{padding:12px 16px;border-radius:11px;font-weight:700}
+    .btn-primary{background:var(--primary);color:#fff}.btn-secondary{background:#eef3f9;color:#26364d}.btn-danger{background:#fff0f0;color:var(--red)}
+    .full{width:100%}
+    .app{min-height:100vh}.topbar{height:64px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:10}
+    .brand{font-weight:800;color:var(--primary);font-size:18px}.top-actions{display:flex;gap:8px}
+    .layout{display:flex}.sidebar{width:230px;background:#fff;border-right:1px solid var(--border);min-height:calc(100vh - 64px);padding:18px;position:fixed;top:64px;bottom:0}
+    .nav-btn{width:100%;text-align:left;background:transparent;padding:12px;border-radius:10px;margin-bottom:5px;color:#46556b;font-weight:700}
+    .nav-btn.active,.nav-btn:hover{background:#eaf3ff;color:var(--primary)}
+    .main{margin-left:230px;width:calc(100% - 230px);padding:24px;max-width:1500px}
+    .page-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.page-head h2{margin-bottom:4px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 4px 18px #14213d08}
+    .kpi .label{color:var(--muted);font-size:13px}.kpi .value{font-size:26px;font-weight:800;margin-top:8px}
+    .table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:14px}.table th{color:var(--muted);font-size:12px;text-transform:uppercase}
+    .badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}.paid{background:#e8f8ef;color:var(--green)}.unpaid{background:#fff3e0;color:var(--orange)}.inactive{background:#ffecec;color:var(--red)}
+    .modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.modal.show{display:flex}.modal-box{width:100%;max-width:560px;background:#fff;border-radius:18px;padding:22px;max-height:90vh;overflow:auto}
+    .modal-head{display:flex;justify-content:space-between;align-items:center}.close{background:#eef3f9;border-radius:9px;padding:7px 10px}
+    .toast{position:fixed;right:20px;bottom:20px;background:#172033;color:#fff;padding:13px 16px;border-radius:11px;display:none;z-index:100;max-width:360px}.toast.show{display:block}
+    .bottom-nav{display:none}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.sidebar{display:none}.main{margin-left:0;width:100%;padding:16px 16px 90px}.bottom-nav{position:fixed;display:flex;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);z-index:20;padding:8px 4px;justify-content:space-around}.bottom-nav button{background:none;color:#607089;font-size:11px;font-weight:700;padding:5px}.bottom-nav button.active{color:var(--primary)}}
+    @media(max-width:560px){.grid,.grid2{grid-template-columns:1fr 1fr;gap:9px}.card{padding:13px}.kpi .value{font-size:20px}.page-head{align-items:flex-start;flex-direction:column}.topbar{padding:0 14px}.table{min-width:620px}.login-card{padding:24px}}
+  </style>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+<div id="loginPage" class="login">
+  <div class="login-card">
+    <div class="logo">📡</div>
+    <h1>RT/RW Net Billing</h1>
+    <p class="muted">Masuk ke panel administrasi billing.</p>
+    <div class="field"><label>Username</label><input id="loginUser" value="admin" autocomplete="username"></div>
+    <div class="field"><label>PIN</label><input id="loginPin" type="password" value="123456" autocomplete="current-password"></div>
+    <button class="btn btn-primary full" onclick="login()">Masuk</button>
+    <p id="loginMsg" class="muted" style="margin-top:12px;text-align:center"></p>
+  </div>
+</div>
+
+<div id="appPage" class="app hidden">
+  <div class="topbar">
+    <div class="brand">📡 RT/RW Net Billing</div>
+    <div class="top-actions"><button class="btn btn-secondary" onclick="logout()">Keluar</button></div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">🏠 Dashboard</button>
+      <button class="nav-btn" data-page="customers" onclick="showPage('customers')">👥 Pelanggan</button>
+      <button class="nav-btn" data-page="invoices" onclick="showPage('invoices')">🧾 Tagihan</button>
+      <button class="nav-btn" data-page="packages" onclick="showPage('packages')">📦 Paket</button>
+      <button class="nav-btn" data-page="report" onclick="showPage('report')">📊 Laporan</button>
+      <button class="nav-btn" data-page="settings" onclick="showPage('settings')">⚙️ Pengaturan</button>
+    </aside>
+
+    <main class="main">
+      <section id="page-dashboard" class="page">
+        <div class="page-head"><div><h2>Dashboard</h2><p class="muted">Ringkasan billing RT/RW Net</p></div><button class="btn btn-primary" onclick="loadDashboard()">↻ Refresh</button></div>
+        <div class="grid">
+          <div class="card kpi"><div class="label">Total Pelanggan</div><div id="kTotal" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Aktif</div><div id="kActive" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Belum Lunas</div><div id="kUnpaid" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Pendapatan</div><div id="kRevenue" class="value">Rp 0</div></div>
+        </div>
+        <div class="grid2" style="margin-top:16px">
+          <div class="card"><h3>💵 Cash</h3><div id="kCash" style="font-size:28px;font-weight:800">Rp 0</div></div>
+          <div class="card"><h3>🏦 Transfer</h3><div id="kTransfer" style="font-size:28px;font-weight:800">Rp 0</div></div>
+        </div>
+      </section>
+
+      <section id="page-customers" class="page hidden">
+        <div class="page-head"><div><h2>Pelanggan</h2><p class="muted">Kelola pelanggan internet.</p></div><button class="btn btn-primary" onclick="openCustomer()">+ Pelanggan</button></div>
+        <div class="card">
+          <div style="display:flex;gap:8px;margin-bottom:15px"><input id="customerSearch" class="field" style="margin:0;flex:1" placeholder="Cari nama, username, HP..." oninput="loadCustomers()"><select id="customerStatus" style="padding:12px;border:1px solid var(--border);border-radius:10px" onchange="loadCustomers()"><option value="">Semua</option><option>Aktif</option><option>Isolir</option><option>Nonaktif</option></select></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Nama</th><th>Username</th><th>No. HP</th><th>Paket</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="page-invoices" class="page hidden">
+        <div class="page-head"><div><h2>Tagihan</h2><p class="muted">Tagihan bulanan pelanggan.</p></div><button class="btn btn-primary" onclick="generateInvoices()">+ Buat Tagihan Bulan Ini</button></div>
+        <div class="card">
+          <div style="display:flex;gap:8px;margin-bottom:15px"><input id="invoicePeriod" type="month" style="padding:12px;border:1px solid var(--border);border-radius:10px" onchange="loadInvoices()"><select id="invoiceStatus" style="padding:12px;border:1px solid var(--border);border-radius:10px" onchange="loadInvoices()"><option value="">Semua Status</option><option>Belum Lunas</option><option>Lunas</option><option>Digabung</option></select></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Pelanggan</th><th>Periode</th><th>Nominal</th><th>Jatuh Tempo</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoiceRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="page-packages" class="page hidden">
+        <div class="page-head"><div><h2>Paket Internet</h2><p class="muted">Kelola paket dan harga.</p></div><button class="btn btn-primary" onclick="openPackage()">+ Paket</button></div>
+        <div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Nama</th><th>Kecepatan</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="packageRows"></tbody></table></div></div>
+      </section>
+
+      <section id="page-report" class="page hidden">
+        <div class="page-head"><div><h2>Laporan</h2><p class="muted">Ringkasan tagihan dan pembayaran.</p></div><input id="reportPeriod" type="month" onchange="loadReport()" style="padding:12px;border:1px solid var(--border);border-radius:10px"></div>
+        <div class="grid">
+          <div class="card kpi"><div class="label">Total Tagihan</div><div id="rBill" class="value">Rp 0</div></div>
+          <div class="card kpi"><div class="label">Lunas</div><div id="rPaid" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Belum Lunas</div><div id="rUnpaid" class="value">0</div></div>
+          <div class="card kpi"><div class="label">Pembayaran</div><div id="rPay" class="value">Rp 0</div></div>
+        </div>
+        <div class="grid2" style="margin-top:16px"><div class="card"><h3>Cash</h3><div id="rCash" style="font-size:26px;font-weight:800">Rp 0</div></div><div class="card"><h3>Transfer</h3><div id="rTransfer" style="font-size:26px;font-weight:800">Rp 0</div></div></div>
+      </section>
+
+      <section id="page-settings" class="page hidden">
+        <div class="page-head"><div><h2>Pengaturan</h2><p class="muted">Pengaturan dasar aplikasi.</p></div></div>
+        <div class="card">
+          <div class="grid2">
+            <div class="field"><label>Nama Usaha</label><input id="sNama"></div>
+            <div class="field"><label>Telepon Usaha</label><input id="sTelepon"></div>
+            <div class="field"><label>Alamat Usaha</label><textarea id="sAlamat"></textarea></div>
+            <div class="field"><label>Jatuh Tempo Default</label><input id="sDue" type="number" min="1" max="28"></div>
+            <div class="field"><label>Gabungkan Tunggakan</label><select id="sMerge"><option>YA</option><option>TIDAK</option></select></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Simpan Pengaturan</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="bottom-nav">
+    <button data-page="dashboard" onclick="showPage('dashboard')">🏠<br>Home</button>
+    <button data-page="customers" onclick="showPage('customers')">👥<br>Pelanggan</button>
+    <button data-page="invoices" onclick="showPage('invoices')">🧾<br>Tagihan</button>
+    <button data-page="report" onclick="showPage('report')">📊<br>Laporan</button>
+    <button data-page="settings" onclick="showPage('settings')">⚙️<br>Setting</button>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="modalTitle">Form</h3><button class="close" onclick="closeModal()">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(console.error);
+      });
+    }
+  </script>
+</body>
+</html>
