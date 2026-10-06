@@ -144,16 +144,27 @@ async function loadPackages(){
     <tr><td><b>${esc(p.nama)}</b></td><td>${esc(p.kecepatan)}</td><td>${rupiah(p.harga)}</td><td>${esc(p.status)}</td>
     <td><button class="btn btn-secondary" onclick='openPackage(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Edit</button></td></tr>`).join('') || '<tr><td colspan="5">Belum ada paket.</td></tr>';
 }
+function normalizePeriodClient(v){
+  const s=String(v??'').trim();
+  const m=s.match(/^(\d{4})-(\d{1,2})/);
+  return m ? m[1]+'-'+String(m[2]).padStart(2,'0') : s;
+}
+
 async function loadInvoices(){
-  const periode=document.getElementById('invoicePeriod').value||currentMonth();
+  const periode=normalizePeriodClient(document.getElementById('invoicePeriod').value||currentMonth());
   const status=document.getElementById('invoiceStatus').value;
-  const r=await api('invoices',{periode,status});
-  state.invoices=r.data||[];
+  // Ambil semua tagihan dulu, lalu filter di browser. Ini membuat tampilan tetap
+  // bekerja walaupun Google Sheets/Apps Script mengubah format periode menjadi tanggal.
+  const r=await api('invoices',{});
+  let rows=Array.isArray(r.data)?r.data:(Array.isArray(r.invoices)?r.invoices:[]);
+  rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
+  if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===String(status).trim().toLowerCase());
+  state.invoices=rows;
   document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
-    <tr><td><b>${esc(i.nama)}</b><br><small>${esc(i.no_hp)}</small></td><td>${esc(i.periode)}</td>
-    <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo)}</td>
-    <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status)}</span></td>
-    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada tagihan.</td></tr>';
+    <tr><td><b>${esc(i.nama||i.pelanggan||'')}</b><br><small>${esc(i.no_hp||'')}</small></td><td>${esc(normalizePeriodClient(i.periode))}</td>
+    <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo||'-')}</td>
+    <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status||'-')}</span></td>
+    <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada tagihan untuk periode '+esc(periode)+'.</td></tr>';
 }
 async function generateInvoices(){
   const periode=document.getElementById('invoicePeriod').value||currentMonth();
