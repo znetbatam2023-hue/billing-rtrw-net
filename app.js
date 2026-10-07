@@ -183,6 +183,14 @@ async function loadInvoices(){
   const r=await api('invoices',{status});
   let rows=Array.isArray(r.data)?r.data:[];
   rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
+
+rows = rows.filter(i =>
+  String(i.status || '').trim().toLowerCase() !== 'digabung'
+);
+
+if(status) rows=rows.filter(i =>
+  String(i.status||'').trim().toLowerCase()===status.trim().toLowerCase()
+);
   if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===status.trim().toLowerCase());
   state.invoices=rows;
   document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
