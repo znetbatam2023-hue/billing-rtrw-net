@@ -186,8 +186,8 @@ async function loadInvoices(){
   if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===status.trim().toLowerCase());
   state.invoices=rows;
   document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
-    <tr><td><b>${esc(i.nama)}</b><br><small>${esc(i.no_hp)}</small></td><td>${esc(i.periode)}</td>
-    <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo)}</td>
+    <tr><td><b>${esc(i.nama)}</b><br><small>${esc(i.no_hp)}</small></td><td>${formatTanggal(i.periode)}</td>
+    <td><b>${rupiah(i.nominal)}</b></td><td>${formatTanggal(i.jatuh_tempo)}</td>
     <td><span class="badge ${String(i.status).toLowerCase()==='lunas'?'paid':String(i.status).toLowerCase()==='digabung'?'inactive':'unpaid'}">${esc(i.status)}</span></td>
     <td>${String(i.status).toLowerCase()==='belum lunas'?`<button class="btn btn-primary" onclick='payInvoice(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Bayar</button>`:'-'}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada tagihan.</td></tr>';
 }
