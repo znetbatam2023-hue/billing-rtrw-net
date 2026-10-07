@@ -103,7 +103,7 @@ async function loadDashboard(){
   document.getElementById('kTotal').textContent=d.total_pelanggan||0;
   document.getElementById('kActive').textContent=d.aktif||0;
   document.getElementById('kUnpaid').textContent=d.belum_lunas||0;
-  document.getElementById('kRevenue').textContent=rupiah(d.pendapatan);
+  document.getElementById('kRevenue').textContent=rupiah(d.uang_belum_bayar ?? d.pendapatan);
   document.getElementById('kCash').textContent=rupiah(d.cash ?? d.total_cash);
   document.getElementById('kTransfer').textContent=rupiah(d.transfer ?? d.total_transfer);
 }
@@ -136,11 +136,24 @@ async function loadPackages(){
     <tr><td><b>${esc(p.nama)}</b></td><td>${esc(p.kecepatan)}</td><td>${rupiah(p.harga)}</td><td>${esc(p.status)}</td>
     <td><button class="btn btn-secondary" onclick='openPackage(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Edit</button></td></tr>`).join('') || '<tr><td colspan="5">Belum ada paket.</td></tr>';
 }
+function normalizePeriodClient(v){
+  if(v instanceof Date && !isNaN(v.getTime())) return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0');
+  const s=String(v??'').trim();
+  const m=s.match(/(\d{4})[-\/](\d{1,2})/);
+  if(m) return m[1]+'-'+String(m[2]).padStart(2,'0');
+  const d=new Date(s);
+  return !isNaN(d.getTime()) ? d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0') : s;
+}
 async function loadInvoices(){
   const periode=document.getElementById('invoicePeriod').value||currentMonth();
   const status=document.getElementById('invoiceStatus').value;
-  const r=await api('invoices',{periode,status});
-  state.invoices=r.data||[];
+  // Ambil semua data lalu normalisasi periode di frontend. Ini menjaga tabel tetap tampil
+  // walaupun Google Sheets menyimpan periode sebagai tanggal 01 atau timestamp.
+  const r=await api('invoices',{status});
+  let rows=Array.isArray(r.data)?r.data:[];
+  rows=rows.filter(i=>normalizePeriodClient(i.periode)===periode);
+  if(status) rows=rows.filter(i=>String(i.status||'').trim().toLowerCase()===status.trim().toLowerCase());
+  state.invoices=rows;
   document.getElementById('invoiceRows').innerHTML=state.invoices.map(i=>`
     <tr><td><b>${esc(i.nama)}</b><br><small>${esc(i.no_hp)}</small></td><td>${esc(i.periode)}</td>
     <td><b>${rupiah(i.nominal)}</b></td><td>${esc(i.jatuh_tempo)}</td>
@@ -239,7 +252,7 @@ async function loadWhatsApp(){
   if(period && !period.value) period.value=currentMonth();
   try{
     const [cfg,auto]=await Promise.all([api('whatsapp_config'),api('get_whatsapp_auto')]);
-    const d=(cfg && cfg.data && cfg.data.data) ? cfg.data.data : (cfg.data||{});
+    const d=(cfg && cfg.data && cfg.data.data) ? cfg.data.data : (cfg && cfg.data ? cfg.data : (cfg||{}));
     const status=document.getElementById('waStatus');
     status.textContent=d.configured?'Fonnte Terhubung':'Fonnte Belum Dikonfigurasi';
     status.className='badge '+(d.configured?'paid':'unpaid');
