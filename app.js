@@ -16,7 +16,38 @@ function rupiah(n){
   return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
 }
 function esc(v){
-  return String(v ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  return String(v ?? '').replace(/[&<>"']/g,m=>(
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]
+  ));
+}
+
+function formatTanggal(v){
+  if (!v) return '-';
+
+  const s = String(v).trim();
+
+  // Format ISO: 2026-10-20 atau 2026-10-20T00:00:00
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
+  const d = new Date(v);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  return s;
+}
+
+function currentMonth(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}#039;'}[m]));
 }
 function currentMonth(){
   const d = new Date();
