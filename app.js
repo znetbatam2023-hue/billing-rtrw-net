@@ -47,8 +47,8 @@ function formatTanggal(v){
 function currentMonth(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-}#039;'}[m]));
 }
+
 function currentMonth(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
